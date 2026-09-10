@@ -1,0 +1,56 @@
+# 脱敏业务描述示例。
+# 此文件不含任何真实业务术语,仅展示如何用数据描述一个任务型对话流程。
+# 引擎不依赖 YAML,业务方可自由选择 YAML/JSON/Python 字典加载后调用
+# build_from_mappings 构造状态机。
+
+business: demo_support_call       # 仅作标识,引擎不解析
+
+states:
+  - name: greet         # 开场
+  - name: verify        # 身份核实
+    max_repeat: 2
+  - name: introduce     # 业务介绍
+    max_repeat: 2
+  - name: confirm       # 意向确认
+    max_repeat: 3
+  - name: objection     # 异议处理
+    max_repeat: 3
+  - name: faq           # 信息问题(消耗 confirm/objection 的预算)
+  - name: handoff       # 转人工
+    terminal: true
+  - name: end           # 礼貌收尾
+    terminal: true
+
+# 决策器输出 node,事件名 = 该 node 值
+transitions:
+  # verify 阶段根据决策分流
+  - {source: verify,    target: handoff,   event: complaint, kind: event}
+  - {source: verify,    target: end,      event: voicemail, kind: event}
+  - {source: verify,    target: introduce, event: proceed,   kind: event}
+  - {source: verify,    target: end,      event: exceed_repeat, kind: event}
+
+  - {source: introduce, target: confirm,   event: willing,   kind: event}
+  - {source: introduce, target: objection, event: unwilling, kind: event}
+  - {source: introduce, target: handoff,   event: complaint, kind: event}
+
+  # confirm/objection 内部循环(自环 + 条件)
+  - {source: confirm,    target: objection, event: no,    kind: event}
+  - {source: confirm,    target: faq,        event: question, kind: event}
+  - {source: confirm,    target: end,       event: yes,   kind: event}
+  - {source: confirm,    target: end,       event: exceed_repeat, kind: event}
+
+  - {source: objection, target: confirm,    event: yes,   kind: event}
+  - {source: objection, target: faq,        event: question, kind: event}
+  - {source: objection, target: end,       event: exceed_repeat, kind: event}
+
+  - {source: faq,       target: confirm,    event: back,  kind: event}
+
+  - {source: greet,     target: verify,     event: proceed, kind: event}
+
+# 决策 prompt 模板(脱敏占位)
+decision_prompt: |
+  对话历史:
+  {history}
+  输出 JSON,字段 node 取值:
+  proceed / willing / unwilling / yes / no / question / complaint / voicemail
+  schema: {schema}
