@@ -1,1 +1,179 @@
-# core/ 读
+# ==================================================================
+# corpus.yaml —— 数据侧配置
+# 对应原代码:
+#   - run_module.py      的 module_configs / condition_pairs
+#   - xlsx2txt-condition.py
+#   - txt_merge.py
+#   - save_db.py
+# ==================================================================
+
+business: suning_sale
+schema_version: 1
+
+# ──────────────────────────────────────────────────────────────────
+# 输入：Excel 文件与列名映射
+# 对应 xlsx2txt-condition.py 的 process_sheet_to_txt
+# ──────────────────────────────────────────────────────────────────
+input:
+  excel: src/templates/xlsx/苏宁结清180+营销话术模板20260902.xlsx
+
+  # 原代码按"列数"判断(4列/5列)，这里先按原逻辑保留位置含义，
+  # 别名列表只作为未来扩展用，暂不生效。
+  columns:
+    id:        ["id"]
+    user:      ["user"]
+    agent:     ["agent"]
+    count:     ["count"]
+    condition: ["condition"]     # 第 5 列
+
+  # 无实际处理的 sheet，可跳过
+  skip_sheets:
+    - 逻辑
+
+# ──────────────────────────────────────────────────────────────────
+# 条件维度
+# 对应 run_module.py 的 condition_pairs
+# 顺序决定 combo_str 拼接顺序，与原代码一致
+# ──────────────────────────────────────────────────────────────────
+conditions:
+  dimensions:
+    - field: sellingpoint
+      nonnull_label: 营销优惠卖点非空
+      null_label: 营销优惠卖点为空
+    - field: quota
+      nonnull_label: 额度非空
+      null_label: 额度为空
+    - field: interest
+      nonnull_label: 预计借款利率区间非空
+      null_label: 预计借款利率区间为空
+
+# ──────────────────────────────────────────────────────────────────
+# 模块定义
+# 对应 run_module.py 的 module_configs:
+#   ('核实', '模块1-确认身份', 1, False),
+#   ...
+#   ('确认', '模块4-意愿确认', 2, True),
+#   ('答疑', '模块5-异议处理', 2, True),
+# ──────────────────────────────────────────────────────────────────
+modules:
+  - sheet: 模块1-确认身份
+    id: verify
+    display_name: 核实
+    max_count: 1
+    conditional: false           # 运行时是否按 combo 筛 (对应 conditional_categories)
+    excel_has_condition: false   # Excel 里是否有 Condition 列
+
+  - sheet: 模块2-产介
+    id: introduce
+    display_name: 产介
+    max_count: 1
+    conditional: false
+    excel_has_condition: false
+
+  - sheet: 模块3-三方
+    id: thirdparty
+    display_name: 三方
+    max_count: 1
+    conditional: false
+    excel_has_condition: false
+
+  - sheet: 模块4-意愿确认
+    id: confirm
+    display_name: 确认
+    max_count: 2
+    conditional: true            # 在 {'确认','答疑'} 里，运行时按 combo 筛
+    excel_has_condition: false   # Excel 里无 Condition 列，需要 expand
+
+  - sheet: 模块5-异议处理
+    id: objection
+    display_name: 答疑
+    max_count: 2
+    conditional: true
+    excel_has_condition: true    # Excel 里有 Condition 列，xlsx2txt 阶段直接按 combo 输出
+
+  - sheet: 投诉倾向
+    id: complaint
+    display_name: 投诉
+    max_count: 1
+    conditional: false
+    excel_has_condition: false
+
+  - sheet: 语音留言
+    id: voicemail
+    display_name: 留言
+    max_count: 1
+    conditional: false
+    excel_has_condition: false
+
+  - sheet: 信息问题
+    id: faq
+    display_name: 信息问题
+    max_count: 1
+    conditional: true
+    excel_has_condition: true
+    is_append_source: true       # 会被合并进其他模块
+
+# ──────────────────────────────────────────────────────────────────
+# 合并规则
+# 对应 txt_merge.py 的两段循环
+# ──────────────────────────────────────────────────────────────────
+merges:
+  # 段 1: 模块4 复制到 8 个 combo 名下（count=1..2）
+  #   for count in range(1, 3):
+  #       source = output_模块4-意愿确认_{count}.txt
+  #       copy 到 output_模块4-意愿确认_count{count}_combo{i}_{combo_str}.txt
+  expand:
+    - module: confirm
+      counts: [1, 2]
+
+  # 段 2: 信息问题合并进模块4、模块5（count=1..2，8 个 combo）
+  append:
+    - source: faq
+      targets:
+        - module: confirm
+          counts: [1, 2]
+        - module: objection
+          counts: [1, 2]
+
+# ──────────────────────────────────────────────────────────────────
+# 输出
+# 对应 xlsx2txt-condition.py 的 --output_prefix
+#        save_db.py 的 template_path / output_path
+#        run_module.py 里 open("./src/templates/txt-condition/...")
+# ──────────────────────────────────────────────────────────────────
+output:
+  txt_dir:    src/templates/txt-condition/
+  faiss_dir:  src/db_saves-condition/
+
+  # 文件命名格式（兼容原 core）
+  # legacy: output_{sheet}_count{N}_combo{I}_{combo_str}.txt
+  #         无条件模块: output_{sheet}_{count}.txt
+  naming: legacy
+  file_stem: output            # ← 新增（可选，默认就是 output）
+
+  # manifest 与缓存（本步骤不写，占位）
+  manifest: src/templates/txt-condition/.manifest.json
+  cache:    .build_cache.json
+
+# ──────────────────────────────────────────────────────────────────
+# Embedding（用于建 FAISS）
+# 对应 save_db.py 的 embedding_model_path / model_kwargs
+# ──────────────────────────────────────────────────────────────────
+embedding:
+  model_path: /home/GUO_Zimeng/models/bge-large-zh-v1.5
+  device: cpu                    # 原代码写 cuda，本机无 GPU 时改 cpu
+
+# ──────────────────────────────────────────────────────────────────
+# 话术模板变量替换的字段白名单（供未来 renderer 用）
+# 对应 prompt.py 的 load_and_format_prompt
+# 本步骤不读，占位
+# ──────────────────────────────────────────────────────────────────
+render:
+  fields:
+    - jobnumber
+    - info_name
+    - info_gender
+    - product
+    - sellingpoint
+    - quota
+    - interest

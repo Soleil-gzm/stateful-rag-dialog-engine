@@ -1,1 +1,220 @@
-# corpus/ 读
+# ==================================================================
+# runtime.yaml —— 逻辑侧配置
+# 对应原代码:
+#   - structure_frontend_v2.py 的 runLLM 状态转移
+#   - structure_frontend_v2.py 的 get_case_modules
+#   - track.py 的 QueryTracker
+#   - argument.py 的参数
+# ==================================================================
+
+business: suning_sale
+schema_version: 1
+
+# ──────────────────────────────────────────────────────────────────
+# 契约点：引用 corpus.yaml 里的 module id
+# ──────────────────────────────────────────────────────────────────
+corpus_manifest: src/templates/txt-condition/.manifest.json
+
+# ──────────────────────────────────────────────────────────────────
+# 运行时按 combo 筛选的类别
+# 对应 structure_frontend_v2.py:
+#   conditional_categories = {'确认', '答疑'}
+# 注：这里保留原代码的中文名，core 改造时再映射到 id
+# ──────────────────────────────────────────────────────────────────
+conditional_categories: [确认, 答疑]
+
+# ──────────────────────────────────────────────────────────────────
+# 状态定义
+# 对应 structure_frontend_v2.py 的 runLLM 里:
+#   if state == 1: current_module = '核实'
+#   ...
+#   elif state == 7: current_module = '留言'
+# 以及终局判断:
+#   (state == 1 and repeat > 1) or (state == 2 and repeat > 1)
+#   or (state == 3 and repeat > 0) or (state == 4 and repeat > 1)
+#   or (state == 5 and repeat > 1) or (state == 6 and repeat > 0)
+#   or (state == 7 and repeat > 0)
+# ──────────────────────────────────────────────────────────────────
+states:
+  - id: 1
+    name: verify
+    display_name: 核实
+    module_id: verify
+    max_repeat: 2
+    # 决策：仅当 repeat == 1 时执行
+    decision:
+      when: repeat == 1
+      chain: [check, willing]
+      map:
+        check.nonidentity: 3
+        check.message: 7
+        willing.cc: 6
+        _default: 2
+
+  - id: 2
+    name: introduce
+    display_name: 产介
+    module_id: introduce
+    max_repeat: 2
+    decision:
+      when: repeat == 1
+      chain: [check, willing]
+      map:
+        check.nonidentity: 3
+        check.message: 7
+        willing.cc: 6
+        willing.yes: 4
+        _default: 5
+
+  - id: 3
+    name: thirdparty
+    display_name: 三方
+    module_id: thirdparty
+    max_repeat: 1
+    # 无决策
+    decision: null
+
+  - id: 4
+    name: confirm
+    display_name: 确认
+    module_id: confirm
+    max_repeat: 2
+    # 决策：每轮都执行
+    decision:
+      when: always
+      chain: [willing]
+      map:
+        willing.cc: 6
+        willing.no: 5
+        _default: null              # 留在本状态
+    # 副作用：客户不说话时，把 node 置 stop
+    # 对应: if (state == 4 or state == 5) and query.strip() == "。"
+    silence_stop: true
+    # label 判断：label == "信息问题" 时 check_count++，否则 repeat++
+    check_count_on_label: 信息问题
+
+  - id: 5
+    name: objection
+    display_name: 答疑
+    module_id: objection
+    max_repeat: 2
+    decision:
+      when: always
+      chain: [willing]
+      map:
+        willing.cc: 6
+        _default: null
+    silence_stop: true
+    check_count_on_label: 信息问题
+
+  - id: 6
+    name: complaint
+    display_name: 投诉
+    module_id: complaint
+    max_repeat: 1
+    decision: null
+
+  - id: 7
+    name: voicemail
+    display_name: 留言
+    module_id: voicemail
+    max_repeat: 1
+    decision: null
+
+# ──────────────────────────────────────────────────────────────────
+# 全局终局条件
+# 对应 structure_frontend_v2.py L108~L124
+# ──────────────────────────────────────────────────────────────────
+terminals:
+  # repeat 超限
+  - id: repeat_exceed
+    when: state_repeat_exceeds_max
+    response: "那您这边稍后有需要的话，可以登录星图金融APP或者在微信上搜索苏宁任性花小程序，在首页点击借款申请就可以了，那这边就先不打扰了，再见。"
+
+  # check_count 超限
+  - id: check_exceed
+    when: check_count > 5
+    response: "您这边如果有其他问题可以联系咱们的在线客服，或者打95177转3号键咨询，那本次来电的话主要是邀请您参与咱们平台的优惠活动，您这边稍后可以登录星图金融APP或者微信搜索苏宁任性花小程序，在首页点击去借钱，就可以享受本次优惠了，那这边就先不打扰您了，祝您生活愉快，再见。"
+
+  # node == stop 且 query 为空
+  - id: stop_empty
+    when: node == "stop" and query.strip() == "。"
+    response: "那您这边稍后有需要的话，可以登录星图金融APP或者在微信上搜索苏宁任性花小程序，在首页点击借款申请就可以了，那这边就先不打扰了，再见。"
+
+# ──────────────────────────────────────────────────────────────────
+# 决策器配置
+# 对应 track.py 的 QueryTracker + run_module.py 的 init_components
+# ──────────────────────────────────────────────────────────────────
+decisions:
+  check:
+    display_name: 核实身份
+    prompt: prompts/track_check.txt
+    schema: State
+    output_field: node
+    backend: trt_llm
+    max_new_tokens: 64              # track.py 里硬编码 64
+    history_window: [-2:]           # track.py 里 history[-2:]
+
+  willing:
+    display_name: 意愿判断
+    prompt: prompts/track_willing.txt
+    schema: State
+    output_field: node
+    backend: trt_llm
+    max_new_tokens: 64
+    history_window: [-2:]
+
+# ──────────────────────────────────────────────────────────────────
+# Prompt 路径
+# 对应 argument.py 的 prompt_track_check_path / prompt_track_willing_path
+# ──────────────────────────────────────────────────────────────────
+prompts:
+  template: qwen                    # template_dict 的 key
+  track_check: src/prompts/track_check.txt
+  track_willing: src/prompts/track_willing.txt
+
+# ──────────────────────────────────────────────────────────────────
+# 模型与推理引擎
+# 对应 argument.py + src/args/qwen.json
+# ──────────────────────────────────────────────────────────────────
+models:
+  track:
+    model_path: /home/slian/models/model_hf_sn_T1_v1
+    engine_dir: /home/slian/project/trtllm/trt_models/te_sn_T1_v1
+
+  embedding:
+    # 必须与 corpus.yaml 中的 embedding.model_path 一致
+    model_path: /home/GUO_Zimeng/models/bge-large-zh-v1.5
+    device: cpu
+
+# ──────────────────────────────────────────────────────────────────
+# 生成参数（TRT-LLM）
+# 对应 argument.py 的 max_new_tokens 等
+# 注：track.py 硬编码覆盖为 64，此处保留 argument.py 的值
+# ──────────────────────────────────────────────────────────────────
+generation:
+  max_new_tokens: 256
+  max_input_length: 2048
+  max_batch_size: 1
+  kv_cache_free_gpu_memory_fraction: 0.05
+  top_p: 0.9
+  temperature: 0.3
+  repetition_penalty: 1.2
+  seed: 10
+
+# ──────────────────────────────────────────────────────────────────
+# 案例信息字段
+# 对应 structure_frontend_v2.py: case_info = prompt = json_data['prompt']
+# 以及 get_case_modules 里读取的 sellingpoint / quota / interest
+# ──────────────────────────────────────────────────────────────────
+case:
+  fields:
+    - jobnumber
+    - info_name
+    - info_gender
+    - product
+    - sellingpoint
+    - quota
+    - interest
+  # combo 判定用的字段
+  combo_fields: [sellingpoint, quota, interest]
