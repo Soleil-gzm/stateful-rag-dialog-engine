@@ -1,0 +1,1 @@
+# 建 FAISS（替代 save_db.py）
