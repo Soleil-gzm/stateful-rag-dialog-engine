@@ -1,2 +1,12 @@
+.vscode*
+
+# 构建产物
+build/
+
+# 输入数据（含业务信息，可能敏感）
+datas/xlsx/*.xlsx
+models/*
+
+# Python
 *__pycache__*
-datas/xlsx*
+*.pyc

@@ -15,7 +15,7 @@ schema_version: 1
 # 对应 xlsx2txt-condition.py 的 process_sheet_to_txt
 # ──────────────────────────────────────────────────────────────────
 input:
-  excel: src/templates/xlsx/苏宁结清180+营销话术模板20260902.xlsx
+  excel: ../datas/xlsx/苏宁结清180+营销话术模板20260902.xlsx
 
   # 原代码按"列数"判断(4列/5列)，这里先按原逻辑保留位置含义，
   # 别名列表只作为未来扩展用，暂不生效。
@@ -142,8 +142,8 @@ merges:
 #        run_module.py 里 open("./src/templates/txt-condition/...")
 # ──────────────────────────────────────────────────────────────────
 output:
-  txt_dir:    src/templates/txt-condition/
-  faiss_dir:  src/db_saves-condition/
+  txt_dir:    ../build/txt-condition
+  faiss_dir:  ../build/db_saves-condition
 
   # 文件命名格式（兼容原 core）
   # legacy: output_{sheet}_count{N}_combo{I}_{combo_str}.txt
@@ -152,15 +152,15 @@ output:
   file_stem: output            # ← 新增（可选，默认就是 output）
 
   # manifest 与缓存（本步骤不写，占位）
-  manifest: src/templates/txt-condition/.manifest.json
-  cache:    .build_cache.json
+  manifest: ../build/txt-condition/.manifest.json
+  cache:    ../build/.build_cache.json
 
 # ──────────────────────────────────────────────────────────────────
 # Embedding（用于建 FAISS）
 # 对应 save_db.py 的 embedding_model_path / model_kwargs
 # ──────────────────────────────────────────────────────────────────
 embedding:
-  model_path: /home/GUO_Zimeng/models/bge-large-zh-v1.5
+  model_path: models/bge-large-zh-v1.5
   device: cpu                    # 原代码写 cuda，本机无 GPU 时改 cpu
 
 # ──────────────────────────────────────────────────────────────────
