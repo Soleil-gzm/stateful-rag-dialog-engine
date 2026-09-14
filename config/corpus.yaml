@@ -160,7 +160,7 @@ output:
 # 对应 save_db.py 的 embedding_model_path / model_kwargs
 # ──────────────────────────────────────────────────────────────────
 embedding:
-  model_path: models/bge-large-zh-v1.5
+  model_path: /home/GUO_Zimeng/coding/projects/suning_sale_20260818-trt-backend/stateful-rag-dialog-engine/models/bge-large-zh-v1.5
   device: cpu                    # 原代码写 cuda，本机无 GPU 时改 cpu
 
 # ──────────────────────────────────────────────────────────────────
