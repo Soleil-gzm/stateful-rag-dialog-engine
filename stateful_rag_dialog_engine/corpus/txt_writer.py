@@ -55,13 +55,7 @@ def _format_count(count) -> str:
 
 def write_qa_txt(path: Path, df: pd.DataFrame, label: str) -> int:
     """
-    逐行写 Question / Answer / Label。
-
-    与原 write_qa_txt 完全一致:
-        line = "Question: {}\nAnswer: {}\nLabel: {}\n".format(
-            row['user'], row['agent'], label
-        )
-
+    逐行写txt Question / Answer / Label。
     返回写入的行数（QA 对数）。
     """
     path.parent.mkdir(parents=True, exist_ok=True)
