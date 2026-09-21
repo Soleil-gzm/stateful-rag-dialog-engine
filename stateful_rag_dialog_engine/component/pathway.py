@@ -7,8 +7,6 @@ import time
 import random
 import re
 
-from .prompt import build_prompt, load_and_format_prompt
-from ..retrieval.rag import get_rag_tools, preprocessing_func, rrf
 from ..tracking.trackers import QueryTracker
 
 logger = logging.getLogger(__name__)
@@ -41,7 +39,7 @@ class Pathway:
         selected_modules = {}
         # 定义需要按条件筛选的类别
         conditional_categories = {'确认', '答疑'}
-    
+
         for category, module_list in Modules_all.items():
             if category in conditional_categories:
                 # 从当前类别中筛选出文件前缀包含 combo_str 的模块
@@ -55,8 +53,23 @@ class Pathway:
                     logger.warning("未找到 %s 类别且满足条件 %s 的模块", category, combo_str)
             else:
                 selected_modules[category] = module_list
-    
+
         return selected_modules     # 筛选符合客户的话术模块吗？
+
+    # ---- 协议输出：所有 stdout 写入都集中在这两个方法 ----
+
+    def _write_response(self, task_id, response):
+        """写一条对话话术"""
+        sys.stdout.write(json.dumps({"task_id": task_id, "response": response}, ensure_ascii=False) + "\n")
+        sys.stdout.flush()
+
+    def _write_signal(self, task_id, state, node, repeat, check_count, query_node):
+        """写状态信号（驱动外部状态机）"""
+        signal = f"<END_OF_STREAMING_SIGNAL>{state}|{node}|{repeat}|{check_count}|{query_node}"
+        sys.stdout.write(json.dumps({"task_id": task_id, "response": signal}, ensure_ascii=False) + "\n")
+        sys.stdout.flush()
+
+    # ---------------------------------------------------
 
     def runLLM(self, input_data, args, components, tracker_check, tracker_willing, Modules_all):
         json_data = json.loads(input_data)
@@ -72,13 +85,13 @@ class Pathway:
         state = chat['state']			# default = 1
         node = chat['node']             # default = "continue"
         repeat = chat['repeat']         # default = 0
-        
+
         # # 读取案例信息
         # case_file_path = args.case_folder + "/case-" + customer_id + ".json"
         # with open(case_file_path, 'r', encoding='utf-8') as file:
         #     case_info = json.load(file)
         case_info = prompt
-        
+
         # -----------
         check_count = chat['check_count'] 	# default = -1
         query_node = chat['query_node']		# default = "continue"      # 这个不需要
@@ -110,25 +123,20 @@ class Pathway:
             #     sys.stdout.flush()
         if (state == 1 and repeat > 1) or (state == 2 and repeat > 1) or (state == 3 and repeat > 0) or (state == 4 and repeat > 1) or (state == 5 and repeat > 1) or (state == 6 and repeat > 0) or (state == 7 and repeat > 0):
             # ------------------------判断repeat是否到达最大次数-----------------
-            sys.stdout.write(json.dumps({"task_id": task_id, "response": "那您这边稍后有需要的话，可以登录星图金融APP或者在微信上搜索苏宁任性花小程序，在首页点击借款申请就可以了，那这边就先不打扰了，再见。"}, ensure_ascii=False) + "\n")
-            sys.stdout.flush()
+            self._write_response(task_id, "那您这边稍后有需要的话，可以登录星图金融APP或者在微信上搜索苏宁任性花小程序，在首页点击借款申请就可以了，那这边就先不打扰了，再见。")
             time.sleep(0.01)
-            sys.stdout.write(json.dumps({"task_id": task_id, "response": f"<END_OF_STREAMING_SIGNAL>{state}|{node}|{repeat}|{check_count}|{query_node}"}, ensure_ascii=False) + "\n")
-            sys.stdout.flush()
+            self._write_signal(task_id, state, node, repeat, check_count, query_node)
         elif check_count > 5:       # 控制触发信息问题模块的次数
-            sys.stdout.write(json.dumps({"task_id": task_id, "response": "您这边如果有其他问题可以联系咱们的在线客服，或者打95177转3号键咨询，那本次来电的话主要是邀请您参与咱们平台的优惠活动，您这边稍后可以登录星图金融APP或者微信搜索苏宁任性花小程序，在首页点击去借钱，就可以享受本次优惠了，那这边就先不打扰您了，祝您生活愉快，再见。"}, ensure_ascii=False) + "\n")
-            sys.stdout.flush()
+            self._write_response(task_id, "您这边如果有其他问题可以联系咱们的在线客服，或者打95177转3号键咨询，那本次来电的话主要是邀请您参与咱们平台的优惠活动，您这边稍后可以登录星图金融APP或者微信搜索苏宁任性花小程序，在首页点击去借钱，就可以享受本次优惠了，那这边就先不打扰您了，祝您生活愉快，再见。")
             time.sleep(0.01)
-            sys.stdout.write(json.dumps({"task_id": task_id, "response": f"<END_OF_STREAMING_SIGNAL>{state}|{node}|{repeat}|{check_count}|{query_node}"}, ensure_ascii=False) + "\n")
-            sys.stdout.flush()
+            self._write_signal(task_id, state, node, repeat, check_count, query_node)
         elif node == 'stop' and query.strip() == "。":
-            sys.stdout.write(json.dumps({"task_id": task_id, "response": "那您这边稍后有需要的话，可以登录星图金融APP或者在微信上搜索苏宁任性花小程序，在首页点击借款申请就可以了，那这边就先不打扰了，再见。"}, ensure_ascii=False) + "\n")
-            sys.stdout.flush()
+            self._write_response(task_id, "那您这边稍后有需要的话，可以登录星图金融APP或者在微信上搜索苏宁任性花小程序，在首页点击借款申请就可以了，那这边就先不打扰了，再见。")
             time.sleep(0.01)
-            sys.stdout.write(json.dumps({"task_id": task_id, "response": f"<END_OF_STREAMING_SIGNAL>{state}|{node}|{repeat}|{check_count}|{query_node}"}, ensure_ascii=False) + "\n")
-            sys.stdout.flush()
+            self._write_signal(task_id, state, node, repeat, check_count, query_node)
         else:
-            # 
+            response = None
+            #
             if state == 1 and repeat == 1:
                 # repeat>=1，对话进行一轮以上，history可取
                 queryhistory = chat['history'][-3:-1]
@@ -189,7 +197,7 @@ class Pathway:
                     repeat = 0
             elif state == 5:
                 queryhistory = chat['history'][-3:-1]
-                
+
                 track_willing = tracker_willing.main(args, components["template"], components["model_track"], components["tokenizer_track"], queryhistory)
                 willing_node = track_willing['node']
                 if willing_node == "cc":
@@ -244,8 +252,10 @@ class Pathway:
             # history_track = tracker.main(args, components, history_update)
             # node = history_track['node']
 
-            sys.stdout.write(json.dumps({"task_id": task_id, "response": f"<END_OF_STREAMING_SIGNAL>{state}|{node}|{repeat}|{check_count}|{query_node}"}, ensure_ascii=False) + "\n")
-            sys.stdout.flush()
+            # 先写话术，再写状态信号（与拆分前顺序一致）
+            if response is not None:                        # ← 新增判断
+                self._write_response(task_id, response)
+            self._write_signal(task_id, state, node, repeat, check_count, query_node)
 
 
     def traverse(self, args, components, Modules_all):
@@ -275,69 +285,7 @@ class Pathway:
                 # {"task_id":"13827","chatHistory":{"history":[{"role":"user","message":"喂"},{"role":"assistant","message":" "}],"state":1,"node":"continue","repeat":0,"customer_id":1,"check_count":-1,"query_node":"continue"}}
                 input_data = sys.stdin.readline().strip()
                 self.runLLM(input_data, args, components, tracker_check, tracker_willing, Modules_all)
-                
+
                 # thread = Thread(target=self.runLLM, args=(input_data, args, components, tracker, querytracker, Modules_all))
                 # thread.start()
                 k = k + 1
-
-
-class Module:
-    '''
-    定义模块
-    '''
-    def __init__(self, name, document_name, embeddings):
-        self.name = name
-        self.file_prefix = document_name
-        self.split_document(document_name, embeddings)
-
-    def split_document(self, document_name, embeddings):
-        with open("./build/txt-condition/" + document_name + ".txt", 'r', encoding='utf-8') as f:
-            text = f.read()
-        
-        lines = text.split("\n") 
-        qa_pairs = []
-        for i in range(0, len(lines), 3):
-            if i+2 < len(lines):
-                qa_pairs.append((lines[i], lines[i+1], lines[i+2]))
-        
-        self.questions = [q for q, a, l in qa_pairs]
-        self.answers = [a for q, a, l in qa_pairs]
-        self.labels = [l for q, a, l in qa_pairs]
-
-        self.vectorizer, self.texts, self.db = get_rag_tools(document_name, ''.join(self.questions), embeddings)
-
-
-    def generate_rag(self, components, query, task_id, case_info):
-        target = "Question: " + query
-        bm25_res = self.vectorizer.get_top_n(preprocessing_func(target), self.texts, n=25)
-        vector_res = self.db.similarity_search(target, k=25)
-
-        text_results = [i for i in bm25_res]
-        vector_results = [i.page_content for i in vector_res]
-
-        logger.debug("文本检索结果：%s", text_results)
-        logger.debug("向量检索结果：%s", vector_results)
-
-        # 取前k个
-        rrf_res = rrf(vector_results, text_results, k=5)
-        logger.debug("RRF 合并结果：%s", rrf_res)
-
-        # 搜索增强，使用小模型，后续可以变成只在模块3使用？
-        # id = self.generate_llm(components["template"], rrf_res, target, components['model_rag'], components['tokenizer_rag'])
-        # question = rrf_res[id]
-        question = rrf_res[0]
-        logger.debug("选中问题：%s", question)
-
-        response = self.answers[self.questions.index(question)].split('Answer: ')[1].strip('\n')
-        # response = rrf_res[0].split('Answer: ')[1].strip('\n')
-        # print(response)
-
-        label = self.labels[self.questions.index(question)].split('Label: ')[1].strip('\n')
-
-        response = load_and_format_prompt(response, case_info)
-
-        output = {"task_id": task_id, "response": response}
-        sys.stdout.write(f"{json.dumps(output, ensure_ascii=False)}\n")
-        sys.stdout.flush()
-
-        return response, label

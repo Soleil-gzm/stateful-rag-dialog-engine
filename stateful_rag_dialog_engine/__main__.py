@@ -13,7 +13,8 @@ import sys
 
 from .arguments import CustomizedArguments
 from .component.template import template_dict
-from .component.structure_frontend_v2 import Pathway, Module
+from .component.pathway import Pathway
+from .component.module import Module
 from .utils.logger import setup_logging
 
 from langchain_huggingface import HuggingFaceEmbeddings
