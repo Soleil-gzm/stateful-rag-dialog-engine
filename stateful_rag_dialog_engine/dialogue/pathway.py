@@ -5,8 +5,10 @@ import logging
 # from threading import Thread
 import time
 import random
-import re
 
+from ..modules.registry import ModuleRegistry
+from ..modules.selector import select_specs
+from ..modules.specs import ModuleSpec
 from ..tracking.trackers import QueryTracker
 
 logger = logging.getLogger(__name__)
@@ -16,45 +18,9 @@ class Pathway:
     '''
     定义路径Pathway为相对独立的Modules
     '''
-    def __init__(self):
+    def __init__(self, registry: ModuleRegistry):
         self.pathway = {}
-
-    def _extract_count(self, file_prefix):
-        """从文件名前缀中提取 count 数字，用于排序"""
-        match = re.search(r'count(\d+)', file_prefix)
-        if match:
-            return int(match.group(1))
-        return 0
-
-    def get_case_modules(self, args, case_info, Modules_all):
-        marketing_not_null = False if case_info.get('sellingpoint') == "" else True
-        quota_not_null = False if case_info.get('quota') == "" else True
-        rate_not_null = False if case_info.get('interest') == "" else True
-
-        marketing_cond = '营销优惠卖点非空' if marketing_not_null else '营销优惠卖点为空'
-        quota_cond = '额度非空' if quota_not_null else '额度为空'
-        rate_cond = '预计借款利率区间非空' if rate_not_null else '预计借款利率区间为空'
-        combo_str = f"{marketing_cond}_{quota_cond}_{rate_cond}"
-
-        selected_modules = {}
-        # 定义需要按条件筛选的类别
-        conditional_categories = {'确认', '答疑'}
-
-        for category, module_list in Modules_all.items():
-            if category in conditional_categories:
-                # 从当前类别中筛选出文件前缀包含 combo_str 的模块
-                matched_modules = [mod for mod in module_list if combo_str in mod.file_prefix]
-                # 按文件名中的 count 数字排序（确保 repeat 索引对应正确的 count 顺序）
-                # 假设文件名中 count 后跟数字，例如 "count1"、"count2"...
-                matched_modules.sort(key=lambda x: self._extract_count(x.file_prefix))
-                selected_modules[category] = matched_modules
-                # 可选：打印警告
-                if len(matched_modules) == 0:
-                    logger.warning("未找到 %s 类别且满足条件 %s 的模块", category, combo_str)
-            else:
-                selected_modules[category] = module_list
-
-        return selected_modules     # 筛选符合客户的话术模块吗？
+        self.registry = registry
 
     # ---- 协议输出：所有 stdout 写入都集中在这两个方法 ----
 
@@ -99,7 +65,7 @@ class Pathway:
 
         # 每个线程都创建？
         # Modules = Modules_all
-        Modules = self.get_case_modules(args, case_info, Modules_all)
+        selected_specs = select_specs(Modules_all, case_info)
 
         # if node == 'end':
         #     sys.stdout.write(json.dumps({"task_id": task_id, "response": "再见。"}, ensure_ascii=False) + "\n")
@@ -211,39 +177,45 @@ class Pathway:
 
             if state == 1:
                 current_module = '核实'
-                response, label = Modules[current_module][repeat].generate_rag(components, query, task_id, case_info)
+                module = self.registry.get(selected_specs[current_module][repeat])
+                response, label = module.generate_rag(components, query, task_id, case_info)
                 repeat += 1
             elif state == 2:
                 current_module = '产介'
-                response, label = Modules[current_module][repeat].generate_rag(components, query, task_id, case_info)
+                module = self.registry.get(selected_specs[current_module][repeat])
+                response, label = module.generate_rag(components, query, task_id, case_info)
                 repeat += 1
             elif state == 3:
                 current_module = '三方'
-                response, label = Modules[current_module][repeat].generate_rag(components, query, task_id, case_info)
+                module = self.registry.get(selected_specs[current_module][repeat])
+                response, label = module.generate_rag(components, query, task_id, case_info)
                 repeat += 1
             elif state == 4:
                 current_module = '确认'
-                response, label = Modules[current_module][repeat].generate_rag(components, query, task_id, case_info)
+                module = self.registry.get(selected_specs[current_module][repeat])
+                response, label = module.generate_rag(components, query, task_id, case_info)
                 if label != "信息问题":
                     repeat += 1
                 else:
                     check_count += 1
             elif state == 5:
                 current_module = '答疑'
-                response, label = Modules[current_module][repeat].generate_rag(components, query, task_id, case_info)
+                module = self.registry.get(selected_specs[current_module][repeat])
+                response, label = module.generate_rag(components, query, task_id, case_info)
                 if label != "信息问题":
                     repeat += 1
                 else:
                     check_count += 1
             elif state == 6:
                 current_module = '投诉'
-                response, label = Modules[current_module][repeat].generate_rag(components, query, task_id, case_info)
+                module = self.registry.get(selected_specs[current_module][repeat])
+                response, label = module.generate_rag(components, query, task_id, case_info)
                 repeat += 1
             elif state == 7:
                 current_module = '留言'
-                response, label = Modules[current_module][repeat].generate_rag(components, query, task_id, case_info)
+                module = self.registry.get(selected_specs[current_module][repeat])
+                response, label = module.generate_rag(components, query, task_id, case_info)
                 repeat += 1
-
             # Dialogue state tracking
             # if state != 0:
             # history_update = chat['history']

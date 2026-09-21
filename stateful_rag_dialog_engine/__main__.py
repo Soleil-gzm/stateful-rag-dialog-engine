@@ -14,7 +14,8 @@ import sys
 from .config.arguments import CustomizedArguments
 from .config.templates import template_dict
 from .dialogue.pathway import Pathway
-from .modules.module import Module
+from .modules.registry import ModuleRegistry
+from .modules.specs import build_all_specs
 from .utils.logger import setup_logging
 
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -136,47 +137,16 @@ if __name__ == "__main__":
     # 模型Initialize
     components = init_components(args)
 
-    # 定义模块配置：(类别, 基础名称, 最大count, 是否有条件)
-    module_configs = [
-        ('核实', '模块1-确认身份', 1, False),
-        ('产介', '模块2-产介', 1, False),
-        ('三方', '模块3-三方', 1, False),
-        ('确认', '模块4-意愿确认', 2, True),
-        ('答疑', '模块5-异议处理', 2, True),
-        ('投诉', '投诉倾向', 1, False),
-        ('留言', '语音留言', 1, False),
-    ]
-    
-    # 三对二值条件
-    condition_pairs = [
-        ('营销优惠卖点非空', '营销优惠卖点为空'),
-        ('额度非空', '额度为空'),
-        ('预计借款利率区间非空', '预计借款利率区间为空'),
-    ]
-    
-    Modules_all = {}
-    
-    for category, base_name, max_count, has_condition in module_configs:
-        modules = []
-        if not has_condition:
-            # 无条件的模块：仅一个（count固定为1）
-            file_prefix = f"output_{base_name}_1"
-            modules.append(Module(category, file_prefix, components['embeddings']))
-        else:
-            # 有条件的模块：按count和8种组合生成
-            for count in range(1, max_count + 1):
-                combo_id = 1
-                for combo in itertools.product(*condition_pairs):
-                    combo_str = '_'.join(combo)
-                    file_prefix = f"output_{base_name}_count{count}_combo{combo_id}_{combo_str}"
-                    modules.append(Module(category, file_prefix, components['embeddings']))
-                    combo_id += 1
-        Modules_all[category] = modules
-    
+    # 构建所有模块的 spec（纯配置，不加载 FAISS）
+    specs_all = build_all_specs()
+
     # 可选：打印检查每个类别的模块数量
-    for cat, mods in Modules_all.items():
-        logger.info("%s: %d 个模块", cat, len(mods))
+    for cat, specs in specs_all.items():
+        logger.info("%s: %d 个模块", cat, len(specs))
+
+    # ModuleRegistry：按需构造 Module
+    registry = ModuleRegistry(components['embeddings'])
 
     # 构建Pathway
-    p = Pathway()
-    p.traverse(args, components, Modules_all)
+    p = Pathway(registry)
+    p.traverse(args, components, specs_all)
