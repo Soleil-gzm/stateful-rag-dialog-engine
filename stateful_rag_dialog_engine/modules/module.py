@@ -1,6 +1,6 @@
 import logging
 
-from .prompt import load_and_format_prompt
+from ..generation.formatter import load_and_format_prompt
 from ..retrieval.rag import get_rag_tools, preprocessing_func, rrf
 
 logger = logging.getLogger(__name__)

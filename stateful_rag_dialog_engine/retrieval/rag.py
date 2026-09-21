@@ -4,7 +4,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 
-# from component.prompt import load_and_format_prompt
+# from .generation.formatter import load_and_format_prompt
 
 import jieba
 

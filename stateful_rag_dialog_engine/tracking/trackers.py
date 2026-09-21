@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from langchain_core.prompts import PromptTemplate
 from pydantic import ValidationError
 
-from ..component.prompt import build_prompt
+from ..generation.prompt import build_prompt
 
 logger = logging.getLogger(__name__)
 

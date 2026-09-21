@@ -4,7 +4,7 @@ conditions.py —— 条件组合生成 + 行匹配判定。
 对应原代码:
     xlsx2txt-condition.py 的 condition_matches + itertools.product
     txt_merge.py 的 combos 生成
-    structure_frontend_v2.py 的 get_case_modules 里 combo_str 拼接
+    pathway.py 的 get_case_modules 里 combo_str 拼接
 
 关键约束: 组合顺序必须与原代码 itertools.product(pair1, pair2, pair3) 完全一致,
 否则 combo_id 与既有文件名对不上。
@@ -149,7 +149,7 @@ def build_combo_str_from_case(
     """
     运行时用: 根据 case_info 生成 combo_str。
 
-    对应 structure_frontend_v2.py 的:
+    对应 pathway.py 的:
         marketing_not_null = False if case_info.get('sellingpoint') == "" else True
         ...
         combo_str = f"{marketing_cond}_{quota_cond}_{rate_cond}"

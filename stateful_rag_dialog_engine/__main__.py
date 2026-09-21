@@ -11,10 +11,10 @@ import logging
 import os
 import sys
 
-from .arguments import CustomizedArguments
-from .component.template import template_dict
-from .component.pathway import Pathway
-from .component.module import Module
+from .config.arguments import CustomizedArguments
+from .config.templates import template_dict
+from .dialogue.pathway import Pathway
+from .modules.module import Module
 from .utils.logger import setup_logging
 
 from langchain_huggingface import HuggingFaceEmbeddings
