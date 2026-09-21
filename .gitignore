@@ -10,3 +10,7 @@ models/*
 # Python
 *__pycache__*
 *.pyc
+
+# Log 日志
+Log/
+*.log

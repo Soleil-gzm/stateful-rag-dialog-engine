@@ -11,6 +11,7 @@ import argparse
 from .arguments import CustomizedArguments
 from .component.template import template_dict
 from .component.structure_frontend_v2 import Pathway, Module
+from .utils.logger import setup_logging
 
 from langchain_huggingface import HuggingFaceEmbeddings
 
@@ -120,22 +121,25 @@ def init_components(args):
 
 
 if __name__ == "__main__":
+    # 初始化日志：文件 + stderr，级别由环境变量 LOG_LEVEL 控制
+    log_file = setup_logging(level=os.environ.get("LOG_LEVEL", "INFO"))
+    logger.info("日志文件: %s", log_file)
+
     # 加载arguments
     args = setup_arguments()
 
     # 模型Initialize
     components = init_components(args)
-    
+
     # 定义模块配置：(类别, 基础名称, 最大count, 是否有条件)
     module_configs = [
         ('核实', '模块1-确认身份', 1, False),
         ('产介', '模块2-产介', 1, False),
         ('三方', '模块3-三方', 1, False),
-        ('确认', '模块4-意愿确认', 2, True),   # 有条件，count从1到2
-        ('答疑', '模块5-异议处理', 2, True),   # 有条件，count从1到2
+        ('确认', '模块4-意愿确认', 2, True),
+        ('答疑', '模块5-异议处理', 2, True),
         ('投诉', '投诉倾向', 1, False),
         ('留言', '语音留言', 1, False),
-        # ('信息', '信息问题', 1, True)
     ]
     
     # 三对二值条件
