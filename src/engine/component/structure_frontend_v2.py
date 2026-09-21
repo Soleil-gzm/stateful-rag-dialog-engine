@@ -6,9 +6,9 @@ import time
 import random
 import re
 
-from src.component.prompt import build_prompt, load_and_format_prompt
-from src.retrieval.rag import get_rag_tools, preprocessing_func, rrf 
-from src.tracking.trackers import QueryTracker
+from engine.component.prompt import build_prompt, load_and_format_prompt
+from engine.retrieval.rag import get_rag_tools, preprocessing_func, rrf 
+from engine.tracking.trackers import QueryTracker
 
 
 class Pathway:

@@ -17,7 +17,7 @@ import sys
 
 from pydantic import BaseModel
 
-from stateful_rag_dialog_engine import (
+from src import (
     DialogContext,
     DialogTurn,
     LLMBackend,
