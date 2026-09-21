@@ -7,8 +7,8 @@ import random
 import re
 
 from src.component.prompt import build_prompt, load_and_format_prompt
-from src.component.rag import get_rag_tools, preprocessing_func, rrf
-from src.component.track import QueryTracker
+from src.retrieval.rag import get_rag_tools, preprocessing_func, rrf 
+from src.tracking.trackers import QueryTracker
 
 
 class Pathway:
