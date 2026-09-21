@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from langchain_core.prompts import PromptTemplate
 from pydantic import ValidationError
 
-from engine.component.prompt import build_prompt
+from ..component.prompt import build_prompt
 
 class State(BaseModel):
     node: str

@@ -8,9 +8,9 @@ Parameter configuration in 'args/qwen.json'
 
 import argparse
 
-from engine.arguments.arguments import CustomizedArguments          # ← 改了
-from engine.component.template import template_dict
-from engine.component.structure_frontend_v2 import Pathway, Module
+from .engine.arguments.arguments import CustomizedArguments
+from .engine.component.template import template_dict
+from .engine.component.structure_frontend_v2 import Pathway, Module
 
 from langchain_huggingface import HuggingFaceEmbeddings
 

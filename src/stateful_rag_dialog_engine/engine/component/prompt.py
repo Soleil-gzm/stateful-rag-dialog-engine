@@ -1,6 +1,6 @@
 import torch
 from langchain_core.prompts import PromptTemplate
-from engine.utils.amount import amount_to_chinese 
+from ..utils.amount import amount_to_chinese
 
 
 def build_prompt(template, tokenizer, query, history, prompt=None):
