@@ -288,7 +288,7 @@ class Module:
         self.split_document(document_name, embeddings)
 
     def split_document(self, document_name, embeddings):
-        with open("./src/templates/txt-condition/" + document_name + ".txt", 'r', encoding='utf-8') as f:
+        with open("./build/txt-condition/" + document_name + ".txt", 'r', encoding='utf-8') as f:
             text = f.read()
         
         lines = text.split("\n") 

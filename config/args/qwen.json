@@ -5,7 +5,7 @@
     "engine_track_dir": "/home/slian/project/trtllm/trt_models/te_sn_T1_v1",
     "prompt_track_check_path": "./src/prompts/prompt_check.txt",
     "prompt_track_willing_path": "./src/prompts/prompt_willing.txt",
-    "embedding_model_path": "/home/GUO_Zimeng/coding/projects/suning_sale_20260818-trt-backend/stateful-rag-dialog-engine/models/bge-large-zh-v1.5",
+    "embedding_model_path": "./models/bge-large-zh-v1.5",
     "template_name": "qwen",
     "kv_cache_free_gpu_memory_fraction": 0.05,
     "max_batch_size": 1,

@@ -31,7 +31,7 @@ def get_rag_tools(module_name, module_document, embeddings):
 
     # # 向量检索---语义
     db = FAISS.load_local( 
-        folder_path= "./src/db_saves-condition/" + module_name,
+        folder_path= "./build/db_saves-condition/" + module_name,
         embeddings=embeddings,
         allow_dangerous_deserialization=True
     )

@@ -1,14 +1,14 @@
 '''
 Usage:
-python run_module.py --args_file=args/qwen.json
-python run_module.py
+python -m stateful_rag_dialog_engine --args_file=config/args/qwen.json
+python -m stateful_rag_dialog_engine
 
-Parameter configuration in 'args/qwen.json'
+Parameter configuration in 'config/args/qwen.json'
 '''
 
 import argparse
 
-from .arguments.arguments import CustomizedArguments
+from .arguments import CustomizedArguments
 from .component.template import template_dict
 from .component.structure_frontend_v2 import Pathway, Module
 
@@ -32,7 +32,7 @@ def setup_arguments():
     读取arguments
     '''
     parser = argparse.ArgumentParser()
-    parser.add_argument("--args_file", type=str, default='src/args/qwen.json', help="")
+    parser.add_argument("--args_file", type=str, default='config/args/qwen.json', help="")
 
     parser.add_argument("--kv_cache_free_gpu_memory_fraction", type=float, default=None)
 
