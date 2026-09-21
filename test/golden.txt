@@ -1,0 +1,6 @@
+{"task_id": "13827", "response": "我这边看到您这次的可用额度是一万，本次借款预计利率是3%-5%，实际情况还是要以APP页面上面展示的为准。"}
+{"task_id": "13827", "response": "<END_OF_STREAMING_SIGNAL>4|continue|0|1|continue"}
+{"task_id": "13827", "response": "系统这边显示您可使用的额度是一万，具体以APP页面显示为准，而且您现在只要再借一笔，就有机会直接提高额度、降低利息，对您来说还是挺划算的，您可以考虑要不要参与进来。"}
+{"task_id": "13827", "response": "<END_OF_STREAMING_SIGNAL>4|continue|0|1|continue"}
+{"task_id": "13827", "response": "那您可以直接在微信找到苏宁任性花小程序，首页点击借钱申请，就能体验本次给到您的优惠权益。"}
+{"task_id": "13827", "response": "<END_OF_STREAMING_SIGNAL>5|continue|0|1|continue"}

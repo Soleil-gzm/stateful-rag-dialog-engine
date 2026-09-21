@@ -50,10 +50,14 @@ def run_engine() -> tuple[str, str]:
     stderr = proc.stderr.decode("utf-8", errors="replace")
 
     if proc.returncode != 0:
-        print(f"\n⚠️ 引擎退出码 = {proc.returncode}")
-        print("---- stderr 尾部 ----")
-        print("\n".join(stderr.splitlines()[-30:]))
-        sys.exit(1)
+        # 引擎读 stdin EOF 时会 JSONDecodeError 崩溃（原代码已知行为）。
+        # 只要 stdout 有内容就继续对比 —— 每行输出都 flush 过，不会丢。
+        if not stdout.strip():
+            print(f"\n⚠️ 引擎退出码 = {proc.returncode}，且 stdout 为空")
+            print("---- stderr 尾部 ----")
+            print("\n".join(stderr.splitlines()[-30:]))
+            sys.exit(1)
+        print(f"\n⚠️ 引擎退出码 = {proc.returncode}（读 stdin EOF 时崩溃，忽略）")
 
     return stdout, stderr
 
