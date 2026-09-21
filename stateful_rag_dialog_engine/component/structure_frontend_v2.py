@@ -1,6 +1,7 @@
 import torch
 import json
 import sys
+import logging
 # from threading import Thread
 import time
 import random
@@ -9,6 +10,8 @@ import re
 from .prompt import build_prompt, load_and_format_prompt
 from ..retrieval.rag import get_rag_tools, preprocessing_func, rrf
 from ..tracking.trackers import QueryTracker
+
+logger = logging.getLogger(__name__)
 
 
 class Pathway:
@@ -49,7 +52,7 @@ class Pathway:
                 selected_modules[category] = matched_modules
                 # 可选：打印警告
                 if len(matched_modules) == 0:
-                    print(f"警告：未找到 {category} 类别且满足条件 {combo_str} 的模块")
+                    logger.warning("未找到 %s 类别且满足条件 %s 的模块", category, combo_str)
             else:
                 selected_modules[category] = module_list
     
@@ -312,18 +315,18 @@ class Module:
         text_results = [i for i in bm25_res]
         vector_results = [i.page_content for i in vector_res]
 
-        print("文本：", text_results)
-        print("向量：", vector_results)
+        logger.debug("文本检索结果：%s", text_results)
+        logger.debug("向量检索结果：%s", vector_results)
 
         # 取前k个
         rrf_res = rrf(vector_results, text_results, k=5)
-        print("合并：", rrf_res)
+        logger.debug("RRF 合并结果：%s", rrf_res)
 
         # 搜索增强，使用小模型，后续可以变成只在模块3使用？
         # id = self.generate_llm(components["template"], rrf_res, target, components['model_rag'], components['tokenizer_rag'])
         # question = rrf_res[id]
         question = rrf_res[0]
-        print("选择：", question)
+        logger.debug("选中问题：%s", question)
 
         response = self.answers[self.questions.index(question)].split('Answer: ')[1].strip('\n')
         # response = rrf_res[0].split('Answer: ')[1].strip('\n')

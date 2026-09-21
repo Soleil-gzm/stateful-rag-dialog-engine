@@ -1,10 +1,13 @@
 import json
+import logging
 import torch
 from pydantic import BaseModel
 from langchain_core.prompts import PromptTemplate
 from pydantic import ValidationError
 
 from ..component.prompt import build_prompt
+
+logger = logging.getLogger(__name__)
 
 class State(BaseModel):
     node: str
@@ -82,16 +85,17 @@ class AssistantTracker():
         return response
 
     def main(self, args, template, model, tokenizer, history):
-        prompt = self.load_and_format_prompt(self.prompt_path, history)
-        # print(prompt)
         """ 
-        print(prompt) 
-        ## json schema格式如下：
-        {json_format}
-        注意，如果按以下方式多一个tab就会报错，原因不知
-        ## json schema格式如下：
-            {json_format}
+                print(prompt) 
+                ## json schema格式如下：
+                {json_format}
+                注意，如果按以下方式多一个tab就会报错，原因不知
+                ## json schema格式如下：
+                    {json_format}
         """
+        
+        prompt = self.load_and_format_prompt(self.prompt_path, history)
+        logger.debug("AssistantTracker prompt:\n%s", prompt)
         response = self.generate(args, template, model, tokenizer, prompt=prompt)
 
         try:
@@ -178,8 +182,6 @@ class QueryTracker():
         return response
 
     def main(self, args, template, model, tokenizer, history):
-        prompt = self.load_and_format_prompt(self.prompt_path, history)
-        # print(prompt)
         """ 
         print(prompt) 
         ## json schema格式如下：
@@ -188,6 +190,8 @@ class QueryTracker():
         ## json schema格式如下：
             {json_format}
         """
+        prompt = self.load_and_format_prompt(self.prompt_path, history)
+        logger.debug("QueryTracker prompt:\n%s", prompt)
         response = self.generate(args, template, model, tokenizer, prompt=prompt)
         
         try:

@@ -7,6 +7,9 @@ Parameter configuration in 'config/args/qwen.json'
 '''
 
 import argparse
+import logging
+import os
+import sys
 
 from .arguments import CustomizedArguments
 from .component.template import template_dict
@@ -27,6 +30,7 @@ import itertools
 # from tensorrt_llm.runtime import ModelRunnerCpp
 # from tensorrt_llm.logger import logger
 
+logger = logging.getLogger(__name__)
 
 def setup_arguments():
     '''
@@ -170,7 +174,7 @@ if __name__ == "__main__":
     
     # 可选：打印检查每个类别的模块数量
     for cat, mods in Modules_all.items():
-        print(f"{cat}: {len(mods)} 个模块")
+        logger.info("%s: %d 个模块", cat, len(mods))
 
     # 构建Pathway
     p = Pathway()
