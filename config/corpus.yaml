@@ -160,8 +160,8 @@ output:
 # 对应 save_db.py 的 embedding_model_path / model_kwargs
 # ──────────────────────────────────────────────────────────────────
 embedding:
-  model_path: /home/GUO_Zimeng/coding/projects/suning_sale_20260818-trt-backend/stateful-rag-dialog-engine/models/bge-large-zh-v1.5
-  device: cpu                    # 原代码写 cuda，本机无 GPU 时改 cpu
+  model_path: ../models/bge-large-zh-v1.5
+  device: cuda                # 原代码写 cuda，本机无 GPU 时改 cpu
 
 # ──────────────────────────────────────────────────────────────────
 # 话术模板变量替换的字段白名单（供未来 renderer 用）
