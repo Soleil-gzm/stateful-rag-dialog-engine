@@ -255,8 +255,15 @@ class Pathway:
 
                 # Format of input_data: 
                 # {"task_id":"13827","chatHistory":{"history":[{"role":"user","message":"喂"},{"role":"assistant","message":" "}],"state":1,"node":"continue","repeat":0,"customer_id":1,"check_count":-1,"query_node":"continue"}}
-                input_data = sys.stdin.readline().strip()
-                self.runLLM(input_data, args, components, tracker_check, tracker_willing, Modules_all)
+                line = sys.stdin.readline()
+                if not line:
+                    # EOF：外部系统关闭了 stdin，正常退出
+                    break
+                input_data = line.strip()
+                if not input_data:
+                    # 空行：跳过
+                    continue
+                self.runLLM(input_data, args, components, tracker_check, tracker_willing,Modules_all)
 
                 # thread = Thread(target=self.runLLM, args=(input_data, args, components, tracker, querytracker, Modules_all))
                 # thread.start()
