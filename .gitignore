@@ -10,7 +10,27 @@ models/*
 # Python
 *__pycache__*
 *.pyc
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
 
 # Log 日志
 Log/
 *.log
+test/actual.txt
+test/*.bak
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# 环境
+.env
+.vscode/settings.json
+
+# 证书（**关键：不要提交私钥**）
+server.key
+server.crt
